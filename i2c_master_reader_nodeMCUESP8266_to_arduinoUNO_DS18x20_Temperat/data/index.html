@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title>Microprocesadores II</title>
+  <!-- Importa las librerias de jQuery y las de Highcharts -->
+  <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
+  <script type="text/javascript" src="js/highcharts.js"></script>
+  <script type="text/javascript" src="js/highcharts-more.js"></script>
+  <script type="text/javascript" src="js/exporting.js"></script>
+  <script type="text/javascript" src="js/export-data.js"></script>
+  <script type="text/javascript" src="js/accessibility.js"></script>
+  <script type="text/javascript" src="js/jquery.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <!-- gráfica -->
+  
+  <div style="width: 1000px; margin: 0 auto 0 auto;">
+    
+  </head>
+  <body>
+   <!-- "Llamo" a la gráfica y la pinto en el cuerpo de la página -->
+   <h2>Estación meteorológica</h2>
+   <div id="graficaLineal" style="width: 80%; height: 400px; margin: 0 auto"></div>
+   <h2>Veleta <div id="Direccion_viento"></div></h2><br>
+   <script type="text/javascript">
+    var chart;
+    var temp_s;
+    var temp1_s;
+    var temp2_s;
+    var temp3_s;
+    var temp4_s;
+    var temp;
+    var temp1;
+    var temp2;
+    var temp3;
+    var temp4;
+    var In_Gen=0;
+    var led_Stat = 0;
+
+    setInterval(function () { //Sensor temperatura
+     var xhttp = new XMLHttpRequest();
+     xhttp.onreadystatechange = function(){
+      if (this.readyState == 4 && this.status == 200) {
+					temp_s = this.responseText;
+          temp = Number(temp_s);
+        }
+      };
+      xhttp.open("GET", "/getADC", true);
+      xhttp.send();
+    }, 500);
+
+    setInterval(function ( ) { //LDR
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+            temp4_s = this.responseText;
+            temp4 = Number(temp4_s);
+          }
+        };
+        xhttp.open("GET", "/getADC1", true);
+        xhttp.send();
+        }, 500 ) ;
+
+    setInterval(function ( ) { //Veleta
+     var xhttp = new XMLHttpRequest();
+     xhttp.onreadystatechange = function(){
+      if (this.readyState == 4 && this.status == 200) {
+          temp2_s = this.responseText; //charg document.getElementById("charg").innerHTML
+          temp2 = Number(temp2_s);
+          if(temp2==2)
+            document.getElementById('Direccion_viento').innerHTML='Viento del norte';
+          if(temp2==1)
+            document.getElementById('Direccion_viento').innerHTML='Viento del sur';
+        }
+      };
+      xhttp.open("GET", "/getADC3", true);
+      xhttp.send();
+    }, 500);
+
+    setInterval(function ( ) { //Humedad
+     var xhttp = new XMLHttpRequest();
+     xhttp.onreadystatechange = function(){
+      if (this.readyState == 4 && this.status == 200) {
+          temp3_s = this.responseText; //charg document.getElementById("charg").innerHTML
+          temp3 = Number(temp3_s);
+        }
+      };
+      xhttp.open("GET", "/getADC4", true);
+      xhttp.send();
+    }, 500);
+
+    Highcharts.chart('graficaLineal', {
+      chart: {
+        type: 'spline',
+    animation: Highcharts.svg, // don't animate in old IE
+    marginRight: 10,
+    events: {
+      load: function () {
+
+        // set up the updating of the chart each second
+        var series = this.series[0];
+        var series1 = this.series[1];
+        var series2 = this.series[2];
+
+        setInterval(function () {
+          var x = (new Date()).getTime(),
+          y = temp;
+          series.addPoint([x, y], true, true);
+
+          var x1 = (new Date()).getTime(),
+          y1 = temp4;
+          series1.addPoint([x1, y1], true, true);
+
+          var x2 = (new Date()).getTime(),
+          y2 = temp3;
+          series2.addPoint([x2, y2], true, true);
+        }, 1000);
+      }
+    }
+  },
+
+  time: {
+    useUTC: false
+  },
+
+  title: {
+    text: 'I2C Arduino'
+  },
+
+  subtitle: {
+    text: ''
+  },
+
+  accessibility: {
+    announceNewData: {
+      enabled: true,
+      minAnnounceInterval: 15000,
+      announcementFormatter: function (allSeries, newSeries, newPoint) {
+        if (newPoint) {
+          return 'New point added. Value: ' + newPoint.y;
+        }
+        return false;
+      }
+    }
+  },
+
+  xAxis: {
+    type: 'datetime',
+    tickPixelInterval: 150
+  },
+
+  yAxis: {
+    title: {
+      text: 'Value'
+    },
+    plotLines: [{
+      value: 0,
+      width: 1,
+      color: '#808080'
+    }]
+  },
+
+  tooltip: {
+    headerFormat: '<b>{series.name}</b><br/>',
+    pointFormat: '{point.x:%Y-%m-%d %H:%M:%S}<br/>{point.y:.2f}'
+  },
+
+  legend: {
+    enabled: true
+  },
+
+  exporting: {
+    enabled: false
+  },
+
+  series: [{
+    name: 'Temperatura C',
+    data: (function () {
+      // generate an array of random data
+      var data = [],
+      time = (new Date()).getTime(),
+      i;
+
+      for (i = -19; i <= 0; i += 1) {
+        data.push({
+          x: time + i * 1000,
+          y: 0
+        });
+      }
+      return data;
+    }())
+  },{
+    name: 'Luminosidad',
+    data: (function () {
+      // generate an array of random data
+      var data = [],
+      time = (new Date()).getTime(),
+      i;
+
+      for (i = -19; i <= 0; i += 1) {
+        data.push({
+          x: time + i * 1000,
+          y: 0
+        });
+      }
+      return data;
+    }())
+  },{
+    name: 'Humedad',
+    data: (function () {
+      // generate an array of random data
+      var data = [],
+      time = (new Date()).getTime(),
+      i;
+
+      for (i = -19; i <= 0; i += 1) {
+        data.push({
+          x: time + i * 1000,
+          y: 0
+        });
+      }
+      return data;
+    }())
+  }]
+});
+
+</script>
+<div id="graficaLineal" style="width: 100%; height: 95px; margin: 0 auto"></div>  
+</body>
+<h5>@LeoCarrillo</h5>
+</html>
